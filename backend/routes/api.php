@@ -25,4 +25,6 @@ Route::middleware('auth:api')->group(function () {
 
     // Media
     Route::post('media/upload', [MediaController::class, 'upload']);
+    Route::post('/posts/{id}/toggle-publish', [PostController::class, 'togglePublish']);
+
 });

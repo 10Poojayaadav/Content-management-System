@@ -29,7 +29,7 @@ class PostController extends Controller
             'title'     => 'required|string|max:255',
             'content'   => 'required',
             'published' => 'boolean',
-            'image'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            // 'image'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $media = null;
@@ -78,10 +78,10 @@ class PostController extends Controller
             'title'     => 'sometimes|string|max:255',
             'content'   => 'sometimes',
             'published' => 'boolean',
-            'image'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            // 'image'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        // Handle image upload if provided
+        // Handle new image upload
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $path = $file->store('media', 'public');
@@ -93,16 +93,17 @@ class PostController extends Controller
                 'size'      => $file->getSize(),
             ]);
 
+            // update media_id
             $data['media_id'] = $media->id;
         }
 
-        // Update slug if title is changed
-        if (isset($data['title'])) {
+        // Update slug if title changed
+        if (!empty($data['title'])) {
             $data['slug'] = \Illuminate\Support\Str::slug($data['title']);
         }
 
-        // Update published_at if published status is provided
-        if (isset($data['published'])) {
+        // Update published_at if published is provided
+        if ($request->has('published')) {
             $data['published_at'] = $data['published'] ? now() : null;
         }
 
@@ -111,7 +112,7 @@ class PostController extends Controller
         return response()->json([
             'status'  => true,
             'message' => 'Post updated successfully',
-            'data'    => $post,
+            'data'    => $post->load('media'),
         ], 200);
     }
 
@@ -133,12 +134,40 @@ class PostController extends Controller
     }
     public function list()
     {
-        $posts = Post::get();
+        $posts = Post::with('media')
+            ->where('published', 1)
+            ->get();
 
         return response()->json([
             'status'  => 'success',
             'message' => 'Posts retrieved successfully',
             'data'    => $posts,
+        ], 200);
+    }
+
+    public function togglePublish($id)
+    {
+        $post = Post::find($id);
+
+        if (!$post) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Post not found'
+            ], 404);
+        }
+        $post->published = !$post->published;
+        if ($post->published) {
+            $post->published_at = now();
+        } else {
+            $post->published_at = null;
+        }
+
+        $post->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Publish status updated successfully',
+            'data' => $post
         ], 200);
     }
 }

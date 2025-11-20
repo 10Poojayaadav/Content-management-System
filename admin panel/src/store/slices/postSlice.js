@@ -6,21 +6,46 @@ const BASE = "posts";
 // Fetch posts
 export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
   const data = await get(BASE);
-  
-  return data.data; 
+
+  return data.data;
 });
 
 // Add post
 export const addPost = createAsyncThunk("posts/addPost", async (postData) => {
-  const data = await post(BASE, postData);
+  const formData = new FormData();
+  Object.keys(postData).forEach((key) => {
+    formData.append(key, postData[key]);
+  });
+
+  const data = await post(BASE, formData, true);
+
   return data.data;
 });
 
+export const togglePublish = createAsyncThunk(
+  "posts/togglePublish",
+  async (id) => {
+    const response = await post(`posts/${id}/toggle-publish`);
+    return response;
+  }
+);
+
 // Update post
-export const updatePost = createAsyncThunk("posts/updatePost", async (postData) => {
-  const data = await put(`${BASE}/${postData.id}`, postData);
-  return data.data;
-});
+export const updatePost = createAsyncThunk(
+  "posts/updatePost",
+  async (postData) => {
+    console.log(postData, "postData");
+    const formData = new FormData();
+    Object.keys(postData).forEach((key) => {
+      formData.append(key, postData[key]);
+    });
+
+    // FIX: send formData instead of postData
+    const data = await put(`${BASE}/${postData.id}`, formData);
+
+    return data.data;
+  }
+);
 
 // Delete post
 export const deletePost = createAsyncThunk("posts/deletePost", async (id) => {
@@ -68,6 +93,12 @@ const postSlice = createSlice({
       // Delete
       .addCase(deletePost.fulfilled, (state, action) => {
         state.items = state.items.filter((post) => post.id !== action.payload);
+      })
+
+      .addCase(togglePublish.fulfilled, (state, action) => {
+        const updated = action.payload.data;
+        const index = state.items.findIndex((p) => p.id === updated.id);
+        if (index !== -1) state.items[index] = updated;
       });
   },
 });

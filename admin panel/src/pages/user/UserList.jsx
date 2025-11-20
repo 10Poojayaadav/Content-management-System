@@ -8,6 +8,7 @@ import {
   addPost,
   updatePost,
   deletePost,
+  togglePublish,
 } from "../../store/slices/postSlice";
 
 createTheme("light", {
@@ -56,6 +57,26 @@ const UserList = () => {
     { name: "ID", selector: (row) => row.id, sortable: true },
     { name: "Title", selector: (row) => row.title, sortable: true },
     { name: "Content", selector: (row) => row.content, sortable: true },
+    {
+      name: "Published",
+      selector: (row) => row.published,
+      cell: (row) => (
+        <label className="inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={row.published === 1 || row.published === true}
+            onChange={() => dispatch(togglePublish(row.id))}
+            className="sr-only peer"
+          />
+          <div
+            className="relative w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 
+                        peer-focus:ring-blue-300 peer-checked:bg-green-500"
+          ></div>
+          <span className="ml-2">{row.published ? "Yes" : "No"}</span>
+        </label>
+      ),
+      sortable: true,
+    },
     {
       name: "Actions",
       cell: (row) => (
@@ -107,11 +128,44 @@ const UserList = () => {
 
       <DataTable
         title="Posts Table"
-        columns={columns}
+        columns={columns.map((col) => {
+          // Wrap/Truncate content for large text
+          if (col.name === "Title" || col.name === "Content") {
+            return {
+              ...col,
+              cell: (row) => (
+                <div className="max-w-[200px] md:max-w-[300px] lg:max-w-[400px] truncate">
+                  {col.selector(row)}
+                </div>
+              ),
+            };
+          }
+          return col;
+        })}
         data={filteredData}
         pagination
         progressPending={loading}
         theme="light"
+        customStyles={{
+          rows: {
+            style: {
+              minHeight: "80px", // fixed row height
+              maxHeight: "120px",
+              wordBreak: "break-word", // wrap long words
+            },
+          },
+          headCells: {
+            style: {
+              fontSize: "14px",
+            },
+          },
+          cells: {
+            style: {
+              fontSize: "13px",
+              padding: "8px",
+            },
+          },
+        }}
       />
 
       {/* Modal for Add/Edit */}

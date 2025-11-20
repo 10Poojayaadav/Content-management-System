@@ -1,11 +1,10 @@
-import API from './axios';
+import API from "./axios";
 
 // GET with params
 export const get = async (url, params = {}) => {
   const response = await API.get(url, { params });
   return response.data;
 };
-
 
 // GET without params
 export const getWithoutParams = async (url) => {
@@ -14,9 +13,14 @@ export const getWithoutParams = async (url) => {
 };
 
 // POST
-export const post = async (url, data = {}, config = {}) => {
-  const response = await API.post(url, data, config);
-  return response.data;
+export const post = async (url, body, isForm = false) => {
+  const res = await API.post(url, body, {
+    headers: isForm
+      ? { "Content-Type": "multipart/form-data" }
+      : { "Content-Type": "application/json" },
+  });
+
+  return res.data;
 };
 
 // PUT
